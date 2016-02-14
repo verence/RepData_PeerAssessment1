@@ -8,7 +8,8 @@ output:
 
 ## Loading and preprocessing the data
 Using read.csv to load the orignal measured data.
-``` {r}
+
+```r
 path <- "activity.csv"
 activityMeasuredD<- read.csv(file = path
                              , sep = ","
@@ -16,9 +17,16 @@ activityMeasuredD<- read.csv(file = path
 ```
 
 Summary of activityMeasuredD:
-``` {r ,echo=FALSE}
-# summay of activityMeasuredD
-summary(activityMeasuredD)
+
+```
+##      steps                date          interval     
+##  Min.   :  0.00   2012-10-01:  288   Min.   :   0.0  
+##  1st Qu.:  0.00   2012-10-02:  288   1st Qu.: 588.8  
+##  Median :  0.00   2012-10-03:  288   Median :1177.5  
+##  Mean   : 37.38   2012-10-04:  288   Mean   :1177.5  
+##  3rd Qu.: 12.00   2012-10-05:  288   3rd Qu.:1766.2  
+##  Max.   :806.00   2012-10-06:  288   Max.   :2355.0  
+##  NA's   :2304     (Other)   :15840
 ```
 
 Convert measured data to analytical data.  
@@ -27,7 +35,8 @@ Convert measured data to analytical data.
 2. Fill up the values in column intervall up to 4 character by adding 0 on the left side(using sprint() - function)     
 3. Add a new column dataTime by mergeing column date and interval (using strptime() -funktion)  
 
-``` {r}
+
+```r
 activityAnalyticD <- activityMeasuredD
 activityAnalyticD$date <-  as.Date(activityMeasuredD$date, format = "%Y-%m-%d")
 # add leadin 0 to intervall
@@ -46,7 +55,8 @@ activityAnalyticD$dateTime <- strptime(dateTimeStr, "%Y-%m-%d %H%M") # as.Date(a
 2. Group by date and aggreate over steps
 3. Rename the columns of data.frame stepsPerDay
 
-``` {r}
+
+```r
 # library(dplyr)
 # ignor NAs by caluclation
 stepsPerDay <-  aggregate(activityAnalyticD$steps, by=list(activityAnalyticD$date), FUN=sum, na.rm=TRUE)
@@ -54,7 +64,8 @@ names(stepsPerDay) <- c("date","sum_steps")
 ```
 
 ### Histogram of the total number of steps taken each day
-``` {r}
+
+```r
 # open output file
 #png(filename="stepsPerDay")
 # plot
@@ -63,19 +74,25 @@ hist(x <- stepsPerDay$sum_steps,
      xlab = "total number (steps)",
      ylab = "Frequency" #, col = "red"
 )
+```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png)
+
+```r
 # close output
 #dev.off()
 ```
 
 
 ### Mean and median of  total number of steps taken per day
-``` {r}
+
+```r
 meanStepsPerDay <-  mean(stepsPerDay$sum_steps)
 medianStepsPerDay <-  median(stepsPerDay$sum_steps)
 ```
 
-- Mean of total number of steps taken per day: `r meanStepsPerDay` steps
-- Median of total number of steps taken per day: `r medianStepsPerDay` steps
+- Mean of total number of steps taken per day: 9354.2295082 steps
+- Median of total number of steps taken per day: 10395 steps
 
 
 ## What is the average daily activity pattern?
@@ -83,7 +100,8 @@ medianStepsPerDay <-  median(stepsPerDay$sum_steps)
 1. agregate over interval and compute the mean for each interval group
 2. Rename the columns of data.frame avgDayProfil
 3. Convert the values in interval column into date type 
-``` {r}
+
+```r
 # library(dplyr)
 avgDayProfil <-  aggregate(activityAnalyticD$steps, by=list(activityAnalyticD$interval), FUN=mean, na.rm=TRUE)
 names(avgDayProfil) <- c("interval","avg_steps")
@@ -94,7 +112,8 @@ avgDayProfil$dateTime <- strptime(avgDayProfil$interval , "%H%M")
 
 - blue horizontal lines to indicate time range of high activity 
 - read horizontal lines to indicate the 5-minute interval with the (average) maximum number of steps 
-``` {r}
+
+```r
 plot(x=avgDayProfil$dateTime, y=avgDayProfil$avg_steps, type="l", lwd=3,
      xlab="time", 
      ylab="avg number (steps)", 
@@ -107,30 +126,35 @@ abline(v=as.numeric(strptime(format(Sys.time(), "%Y-%m-%d 09:10" ),"%Y-%m-%d %H:
 abline(v=as.numeric(strptime(format(Sys.time(), "%Y-%m-%d 08:35" ),"%Y-%m-%d %H:%M")),col=2,lty=1)
 ```
 
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8-1.png)
+
 ### Maximum number of step in 5-minute interval, on average across all the days in the datasets
-``` {r}
+
+```r
 highActiv <-  avgDayProfil[order(-avgDayProfil$avg_steps),]
 ## highest Value
 maxActivityInterval <- format(highActiv[1,]$dateTime,"%H:%M")
 ```
 
-- The maximum number is in 5-minute interval on: `r maxActivityInterval`  
+- The maximum number is in 5-minute interval on: 08:35  
 
 
 ## Imputing missing values
 
 ### Calculate the total number of missing values in the dataset
-``` {r}
+
+```r
 countNA <- sum(is.na(activityMeasuredD))
 ```
 
-- In total there are `r countNA` rows with missing values (NA)
+- In total there are 2304 rows with missing values (NA)
 
 ### Filling in all of the missing values in the dataset 
 
 - First I create a copy of the original measured data
 - clean up intervall 
-``` {r}
+
+```r
 activityAnalyticDnoNA <- activityMeasuredD
 activityAnalyticDnoNA$date <-  as.Date(activityAnalyticDnoNA$date, format = "%Y-%m-%d")
 # add leadin 0 to intervall
@@ -143,7 +167,8 @@ activityAnalyticDnoNA$dateTime <- strptime(dateTimeStr, "%Y-%m-%d %H%M") # a
 - Missing values are all in column steps. So I need a strategy to fill them up.
 I uses the mean for that 5-minute interval calulated above (avgDayProfil) to fill them up. 
 - In order to keep the orignal data I add a new column stepsNoNA which hold the steps and did not contain NA 
-``` {r}
+
+```r
 # add a new collumn called stepsNoNA which contains no NA
 activityAnalyticDnoNA$stepsNoNA <-  activityMeasuredD$steps
 # fill up NA
@@ -152,7 +177,6 @@ for (i in which(is.na(activityAnalyticDnoNA$steps)))
   int <- activityAnalyticDnoNA$interval[i]
   activityAnalyticDnoNA$stepsNoNA[i]<- avgDayProfil[avgDayProfil$interval==int,]$avg_steps
 }  
-
 ```
 
 ### Calculate the total number of steps taken each day without NA
@@ -160,7 +184,8 @@ for (i in which(is.na(activityAnalyticDnoNA$steps)))
 1. Load dplyr Package to calculate stepsPerDay
 2. Group by date and aggreate over steps
 3. Rename the columns of data.frame stepsPerDay
-``` {r}
+
+```r
 # library(dplyr)
 # total number of steps per no NA
 stepsPerDaynoNA <-  aggregate(activityAnalyticDnoNA$stepsNoNA, by=list(activityAnalyticDnoNA$date), FUN=sum)
@@ -168,7 +193,8 @@ names(stepsPerDaynoNA) <- c("date","sum_steps")
 ```
 
 ### Histogram of the total number of steps taken each day without NA
-``` {r}
+
+```r
 # open output file
 #png(filename="stepsPerDay")
 # plot
@@ -179,15 +205,18 @@ hist(x <- stepsPerDaynoNA$sum_steps,
 )
 ```
 
+![plot of chunk unnamed-chunk-14](figure/unnamed-chunk-14-1.png)
+
 
 ### Mean and median of  total number of steps taken per day without NA
-``` {r}
+
+```r
 meanStepsPerDay <-  mean(stepsPerDaynoNA$sum_steps)
 medianStepsPerDay <-  median(stepsPerDaynoNA$sum_steps)
 ```
 
-- Mean of total number of steps taken per day without NA: `r meanStepsPerDay` steps
-- Median of total number of steps taken per day without NA: `r medianStepsPerDay` steps
+- Mean of total number of steps taken per day without NA: 1.0766189 &times; 10<sup>4</sup> steps
+- Median of total number of steps taken per day without NA: 1.0766189 &times; 10<sup>4</sup> steps
 
 The mean and median value calculation without NA differ from the mean and median value calulated with NA.
 
@@ -197,7 +226,8 @@ The mean and median value calculation without NA differ from the mean and median
 
 1. Add factor variable, the weekdays coded as numbers (1=monday,..., 7= sunnday)
 2. Change factor vaiable and merge all weedays together and all weekends together
-``` {r}
+
+```r
 # add factor Variabel
 activityAnalyticDnoNA$partOfWeek <- as.factor(format(activityAnalyticDnoNA$date,'%u'))
 # Change levels:
@@ -212,7 +242,8 @@ across all weekday days or weekend days (y-axis).
 
 - Calulate the profile
 
-``` {r}
+
+```r
 avgDayProfilnoNA <- aggregate(activityAnalyticDnoNA$stepsNoNA, by=list(activityAnalyticDnoNA$interval,activityAnalyticDnoNA$partOfWeek), FUN=mean, na.rm=TRUE)
 names(avgDayProfilnoNA ) <- c("interval","partOfWeek","avg_steps")
 avgDayProfilnoNA $dateTime <- strptime(avgDayProfilnoNA $interval , "%H%M") 
@@ -220,9 +251,12 @@ avgDayProfilnoNA $dateTime <- strptime(avgDayProfilnoNA $interval , "%H%M")
 
 - Plot the  graph
 
-``` {r}
+
+```r
 library(ggplot2)
 plot <- ggplot(avgDayProfilnoNA,  aes(x= dateTime, y= avg_steps))+  geom_line(dotsize=  0.4)+  facet_grid(partOfWeek ~ .)
 plot
 ```
+
+![plot of chunk unnamed-chunk-18](figure/unnamed-chunk-18-1.png)
 
